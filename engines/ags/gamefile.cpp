@@ -27,10 +27,11 @@
 #include "ags/gamefile.h"
 #include "ags/resourceman.h"
 #include "ags/script.h"
+#include "ags/util.h"
 
 namespace AGS {
 
-GameFile::GameFile() {
+GameFile::GameFile(AGSEngine *vm) : _vm(vm) {
 }
 
 GameFile::~GameFile() {
@@ -48,45 +49,6 @@ void GameFile::readVersion(Common::SeekableReadStream &dta) {
 	_versionString = (const char *) versionString;
 
 	delete[] versionString;
-}
-
-static Common::String readString(Common::SeekableReadStream *dta) {
-	Common::String str;
-	while (true) {
-		char c = (char)dta->readByte();
-		if (!c)
-			break;
-		str += c;
-	}
-	return str;
-}
-
-void GameFile::decryptText(uint8 *str, uint32 max) {
-	static const char *kSecretPassword = "Avis Durgan";
-
-	uint passPos = 0;
-	while (max-- > 0) {
-		*str -= (uint8) kSecretPassword[passPos];
-		if (!*str)
-			break;
-
-		str++;
-
-		passPos = (passPos + 1) % 11;
-	}
-}
-
-Common::String GameFile::decryptString(Common::SeekableReadStream *dta) {
-	uint32 stringLen = dta->readUint32LE();
-	if (stringLen > 5000000)
-		error("invalid value in decryptString");
-	byte *string = new byte[stringLen + 1];
-	dta->read(string, stringLen);
-	string[stringLen] = 0;
-	decryptText(string, stringLen);
-	Common::String newString((char *)string);
-	delete[] string;
-	return newString;
 }
 
 #define MAX_SCRIPT_MODULES 50
@@ -654,18 +616,20 @@ void GameFile::setDefaultMessages() {
 #define GUI_VERSION 115
 
 void GameFile::readGui(Common::SeekableReadStream *dta) {
-	uint32 guiVersion = dta->readUint32LE();
+	_guiVersion = dta->readUint32LE();
 	uint32 guiCount;
-	if (guiVersion < 100) {
-		guiCount = guiVersion;
-	} else if (guiVersion <= GUI_VERSION) {
+	if (_guiVersion < 100) {
+		guiCount = _guiVersion;
+	} else if (_guiVersion <= GUI_VERSION) {
 		guiCount = dta->readUint32LE();
 	} else {
-		error("GUI version %d is too new?", guiVersion);
+		error("GUI version %d is too new?", _guiVersion);
 	}
 
 	if (guiCount > 1000)
 		error("GUI is corrupt? (%d entries)", guiCount);
+
+	debug(2, "GUI version %d, with %d groups", _guiVersion, guiCount);
 
 	_guiGroups.resize(guiCount);
 	for (uint i = 0; i < guiCount; ++i) {
@@ -721,9 +685,9 @@ void GameFile::readGui(Common::SeekableReadStream *dta) {
 		// fixes/upgrades
 		if (group._height < 2)
 			group._height = 2;
-		if (guiVersion < 103)
+		if (_guiVersion < 103)
 			group._name = Common::String::format("GUI%d", i);
-		if (guiVersion < 105)
+		if (_guiVersion < 105)
 			group._zorder = i;
 		group._id = i;
 	}
@@ -731,54 +695,54 @@ void GameFile::readGui(Common::SeekableReadStream *dta) {
 	uint32 buttonCount = dta->readUint32LE();
 	_guiButtons.resize(buttonCount);
 	for (uint i = 0; i < buttonCount; ++i) {
-		// TODO
-		error("buttons");
+		_guiButtons[i] = new GUIButton(_vm);
+		_guiButtons[i]->readFrom(dta);
 	}
 
 	uint32 labelCount = dta->readUint32LE();
 	_guiLabels.resize(labelCount);
 	for (uint i = 0; i < labelCount; ++i) {
-		// TODO
-		error("labels");
+		_guiLabels[i] = new GUILabel(_vm);
+		_guiLabels[i]->readFrom(dta);
 	}
 
 	uint32 invControlCount = dta->readUint32LE();
 	_guiInvControls.resize(invControlCount);
 	for (uint i = 0; i < invControlCount; ++i) {
-		// TODO
-		error("inv");
+		_guiInvControls[i] = new GUIInvControl(_vm);
+		_guiInvControls[i]->readFrom(dta);
 	}
 
-	if (guiVersion >= 100) {
+	if (_guiVersion >= 100) {
 		uint32 sliderCount = dta->readUint32LE();
 		_guiSliders.resize(sliderCount);
 		for (uint i = 0; i < sliderCount; ++i) {
-			// TODO
-			error("sliders");
+			_guiSliders[i] = new GUISlider(_vm);
+			_guiSliders[i]->readFrom(dta);
 		}
 	}
 
-	if (guiVersion >= 101) {
+	if (_guiVersion >= 101) {
 		uint32 textboxCount = dta->readUint32LE();
 		_guiTextBoxes.resize(textboxCount);
 		for (uint i = 0; i < textboxCount; ++i) {
-			// TODO
-			error("textboxes");
+			_guiTextBoxes[i] = new GUITextBox(_vm);
+			_guiTextBoxes[i]->readFrom(dta);
 		}
 	}
 
-	if (guiVersion >= 102) {
+	if (_guiVersion >= 102) {
 		uint32 listboxCount = dta->readUint32LE();
 		_guiListBoxes.resize(listboxCount);
 		for (uint i = 0; i < listboxCount; ++i) {
-			// TODO
-			error("listboxes");
+			_guiListBoxes[i] = new GUIListBox(_vm);
+			_guiListBoxes[i]->readFrom(dta);
 		}
 	}
 
 	// TODO: setup the gui lookup array etc
 
-	// FIXME: draw order
+	// TODO: draw order?
 }
 
 void GameFile::readPlugins(Common::SeekableReadStream *dta) {

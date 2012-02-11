@@ -4,8 +4,10 @@ MODULE_OBJS := \
 	ags.o \
 	detection.o \
 	gamefile.o \
+	gui.o \
 	resourceman.o \
-	script.o
+	script.o \
+	util.o
 
 # This module can be built as a plugin
 ifeq ($(ENABLE_AGS), DYNAMIC_PLUGIN)

@@ -79,8 +79,13 @@ namespace AGS {
 #define GBUT_ALIGN_BOTTOMMIDDLE 7
 #define GBUT_ALIGN_BOTTOMRIGHT  8
 
+class AGSEngine;
+
 class GUIObject {
 public:
+	GUIObject(AGSEngine *vm) : _vm(vm) { }
+	virtual ~GUIObject() { }
+
 	uint32 _id;
 	uint32 _objectId;
 	uint32 _flags;
@@ -96,12 +101,20 @@ public:
 	// FIXME: virtual functions
 
 protected:
+	virtual void readFrom(Common::SeekableReadStream *dta);
+	virtual uint32 getMaxNumEvents() = 0;
+
+	AGSEngine *_vm;
+
 	Common::Array<Common::String> _supportedEvents;
 	Common::Array<Common::String> _supportedEventArgs;
 };
 
 class GUISlider : public GUIObject {
 public:
+	GUISlider(AGSEngine *vm) : GUIObject(vm) { }
+	void readFrom(Common::SeekableReadStream *dta);
+
 	uint32 _min, _max;
 	uint32 _value;
 	uint32 _mousePressed;
@@ -110,6 +123,8 @@ public:
 	uint32 _bgImage;
 
 protected:
+	uint32 getMaxNumEvents() { return 1; }
+
 	// The following variables are not persisted on disk
 	// Cached (x1, x2, y1, y2) co-ordinates of slider handle
 	uint32 _cachedHandleTLX, _cachedHandleBRX;
@@ -118,24 +133,38 @@ protected:
 
 class GUILabel : public GUIObject {
 public:
+	GUILabel(AGSEngine *vm) : GUIObject(vm) { }
+	void readFrom(Common::SeekableReadStream *dta);
+
 	uint32 _font;
 	uint32 _textColor;
 	uint32 _align;
 
 protected:
+	uint32 getMaxNumEvents() { return 0; }
+
 	Common::String _text;
 };
 
 class GUITextBox : public GUIObject {
 public:
+	GUITextBox(AGSEngine *vm) : GUIObject(vm) { }
+	void readFrom(Common::SeekableReadStream *dta);
+
 	Common::String _text;
 	uint32 _font;
 	uint32 _textColor;
 	uint32 _exFlags;
+
+protected:
+	uint32 getMaxNumEvents() { return 1; }
 };
 
 class GUIListBox : public GUIObject {
 public:
+	GUIListBox(AGSEngine *vm) : GUIObject(vm) { }
+	void readFrom(Common::SeekableReadStream *dta);
+
 	Common::Array<Common::String> _items;
 	Common::Array<uint16> _itemSaveGameIndexes;
 
@@ -152,24 +181,36 @@ public:
 	uint32 _exFlags;
 	uint32 _selectedBgColor;
 	uint32 _alignment;
+
+protected:
+	uint32 getMaxNumEvents() { return 1; }
 };
 
 class GUIInvControl : public GUIObject {
 public:
-	uint32 _isOver;
+	GUIInvControl(AGSEngine *vm) : GUIObject(vm) { }
+	void readFrom(Common::SeekableReadStream *dta);
+
 	uint32 _charId; // whose inventory? (-1 = current player)
 	uint32 _itemWidth, _itemHeight;
 	uint32 _topIndex;
 
 	// not persisted
+	uint32 _isOver;
 	uint32 _itemsPerLine, _numLines;
+
+protected:
+	uint32 getMaxNumEvents() { return 1; }
 };
 
 class GUIButton : public GUIObject {
 public:
+	GUIButton(AGSEngine *vm) : GUIObject(vm) { }
+	void readFrom(Common::SeekableReadStream *dta);
+
 	Common::String _text;
 
-	uint32 _pic, _overPic, _pushedPic, _usePic;
+	uint32 _pic, _overPic, _pushedPic;
 	uint32 _isPushed, _isOver;
 
 	uint32 _font;
@@ -178,6 +219,12 @@ public:
 	uint32 _leftClick, _rightClick;
 	uint32 _leftClickData, _rightClickData;
 	uint32 _textAlignment;
+
+	// not persisted
+	uint32 _usePic;
+
+protected:
+	uint32 getMaxNumEvents() { return 1; }
 };
 
 struct GUIGroup {
