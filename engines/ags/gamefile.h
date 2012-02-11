@@ -22,6 +22,7 @@
 #ifndef AGS_GAMEFILE_H
 #define AGS_GAMEFILE_H
 
+#include "ags/gui.h"
 #include "common/array.h"
 
 namespace AGS {
@@ -194,6 +195,9 @@ private:
 	ViewFrame readViewFrame(Common::SeekableReadStream *dta);
 	void readOldViews(Common::SeekableReadStream *dta);
 	CharacterInfo *readCharacter(Common::SeekableReadStream *dta);
+	void readGui(Common::SeekableReadStream *dta);
+	void readPlugins(Common::SeekableReadStream *dta);
+	void readProperties(Common::SeekableReadStream *dta);
 	void setDefaultMessages();
 
 public:
@@ -266,6 +270,15 @@ public:
 
 	Common::Array<DialogTopic> _dialogs;
 	Common::Array<Common::String> _speechLines;
+
+	Common::Array<GUIGroup> _guiGroups;
+
+	Common::Array<GUIButton> _guiButtons;
+	Common::Array<GUILabel> _guiLabels;
+	Common::Array<GUIInvControl> _guiInvControls;
+	Common::Array<GUISlider> _guiSliders;
+	Common::Array<GUITextBox> _guiTextBoxes;
+	Common::Array<GUIListBox> _guiListBoxes;
 
 private:
 	void readVersion(Common::SeekableReadStream &dta);
