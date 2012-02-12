@@ -7,6 +7,7 @@ MODULE_OBJS := \
 	gui.o \
 	resourceman.o \
 	script.o \
+	sprites.o \
 	util.o
 
 # This module can be built as a plugin
