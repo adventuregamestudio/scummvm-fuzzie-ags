@@ -150,9 +150,12 @@ Common::SeekableReadStream *AGSEngine::getFile(const Common::String &filename) c
 
 Common::String AGSEngine::getMasterArchive() const {
 	const ADGameFileDescription *gameFiles = getGameFiles();
+	const char *gameFile = getDetectedGameFile();
 
 	if (gameFiles[0].fileName)
 		return gameFiles[0].fileName;
+	else if (gameFile[0])
+		return gameFile;
 
 	return "ac2game.dat";
 }

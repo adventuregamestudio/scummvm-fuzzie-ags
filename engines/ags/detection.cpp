@@ -27,11 +27,15 @@
 #include "engines/advancedDetector.h"
 
 #include "ags/ags.h"
+#include "ags/resourceman.h"
 
 namespace AGS {
 
 struct AGSGameDescription {
 	ADGameDescription desc;
+
+	const char *title;
+	const char *filename;
 };
 
 const char *AGSEngine::getGameId() const {
@@ -54,6 +58,10 @@ const ADGameFileDescription *AGSEngine::getGameFiles() const {
 	return _gameDescription->desc.filesDescriptions;
 }
 
+const char *AGSEngine::getDetectedGameFile() const {
+	return _gameDescription->filename;
+}
+
 } // End of namespace AGS
 
 static const PlainGameDescriptor AGSGames[] = {
@@ -74,9 +82,7 @@ public:
 		_guiOptions = GUIO1(GUIO_NOLAUNCHLOAD);
 	}
 
-	virtual const ADGameDescription *fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const {
-		return detectGameFilebased(allFiles, fslist, AGS::fileBased);
-	}
+	virtual const ADGameDescription *fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const;
 
 	virtual const char *getName() const {
 		return "Adventure Game Studio";
@@ -88,7 +94,93 @@ public:
 
 	virtual bool hasFeature(MetaEngineFeature f) const;
 	virtual bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const;
+
+protected:
+	virtual void updateGameDescriptor(GameDescriptor &desc, const ADGameDescription *realDesc) const;
 };
+
+static AGS::AGSGameDescription s_fallbackDesc = {
+	{
+	"",
+	"",
+	AD_ENTRY1(0, 0),
+	Common::UNK_LANG,
+	Common::kPlatformUnknown,
+	ADGF_NO_FLAGS,
+	GUIO0()
+	},
+	"",
+	""
+};
+static char s_fallbackFilenameBuffer[21];
+static char s_fallbackTitleBuffer[51];
+
+const ADGameDescription *AGSMetaEngine::fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const {
+	const ADGameDescription *d = detectGameFilebased(allFiles, fslist, AGS::fileBased);
+	if (d)
+		return d;
+
+	// reset fallback description
+	AGS::AGSGameDescription *desc = &s_fallbackDesc;
+	desc->desc.gameId = "ags";
+	desc->desc.extra = "";
+	desc->desc.language = Common::UNK_LANG;
+	desc->desc.flags = ADGF_NO_FLAGS;
+	desc->desc.platform = Common::kPlatformUnknown;
+	desc->desc.guiOptions = GUIO0();
+	desc->title = "";
+	desc->filename = "";
+
+	for (Common::FSList::const_iterator file = fslist.begin(); file != fslist.end(); ++file) {
+		if (file->isDirectory())
+			continue;
+
+		Common::String filename = file->getName();
+		filename.toLowercase();
+		if (!filename.hasSuffix(".exe"))
+			continue;
+
+		SearchMan.clear();
+		SearchMan.addDirectory(file->getParent().getName(), file->getParent());
+		AGS::ResourceManager resourceManager;
+		if (!resourceManager.init(filename))
+			continue;
+
+		Common::SeekableReadStream *dta = resourceManager.getFile("ac2game.dta");
+		if (!dta)
+			continue;
+		dta->skip(30 + 4); // signature + version
+		uint32 versionStringLength = dta->readUint32LE();
+		dta->skip(versionStringLength);
+
+		char gameTitle[51];
+		dta->read(gameTitle, 50);
+		gameTitle[50] = '\0';
+		delete dta;
+		strncpy(s_fallbackTitleBuffer, gameTitle, 50);
+		s_fallbackTitleBuffer[50] = '\0';
+		desc->title = s_fallbackTitleBuffer;
+
+		strncpy(s_fallbackFilenameBuffer, filename.c_str(), 20);
+		s_fallbackFilenameBuffer[20] = '\0';
+		desc->filename = s_fallbackFilenameBuffer;
+
+		return (ADGameDescription *)desc;
+	}
+
+	return NULL;
+}
+
+void AGSMetaEngine::updateGameDescriptor(GameDescriptor &desc, const ADGameDescription *realDesc) const {
+	AdvancedMetaEngine::updateGameDescriptor(desc, realDesc);
+
+	// try to update title
+	const AGS::AGSGameDescription *agsDesc = (const AGS::AGSGameDescription *)realDesc;
+	if (!agsDesc->title[0])
+		return;
+	desc["description"] = agsDesc->title;
+	desc.updateDesc("AGS");
+}
 
 bool AGSMetaEngine::hasFeature(MetaEngineFeature f) const {
 	return false;

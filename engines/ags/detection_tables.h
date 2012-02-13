@@ -36,6 +36,8 @@ static const AGSGameDescription gameDescriptions[] = {
 			ADGF_NO_FLAGS,
 			GUIO1(GUIO_NOASPECT)
 		},
+		"",
+		"",
 	},
 	{
 		{
@@ -47,6 +49,8 @@ static const AGSGameDescription gameDescriptions[] = {
 			ADGF_NO_FLAGS,
 			GUIO1(GUIO_NOASPECT)
 		},
+		"",
+		"",
 	},
 	{
 		{
@@ -58,6 +62,8 @@ static const AGSGameDescription gameDescriptions[] = {
 			ADGF_NO_FLAGS,
 			GUIO1(GUIO_NOASPECT)
 		},
+		"",
+		"",
 	},
 	{
 		{
@@ -69,6 +75,8 @@ static const AGSGameDescription gameDescriptions[] = {
 			ADGF_NO_FLAGS,
 			GUIO1(GUIO_NOASPECT)
 		},
+		"",
+		"",
 	},
 	{
 		{
@@ -80,6 +88,8 @@ static const AGSGameDescription gameDescriptions[] = {
 			ADGF_NO_FLAGS,
 			GUIO1(GUIO_NOASPECT)
 		},
+		"",
+		"",
 	},
 	{
 		{
@@ -91,6 +101,8 @@ static const AGSGameDescription gameDescriptions[] = {
 			ADGF_NO_FLAGS,
 			GUIO1(GUIO_NOASPECT)
 		},
+		"",
+		"",
 	},
 	{
 		{
@@ -102,6 +114,8 @@ static const AGSGameDescription gameDescriptions[] = {
 			ADGF_NO_FLAGS,
 			GUIO1(GUIO_NOASPECT)
 		},
+		"",
+		"",
 	},
 	{
 		{
@@ -113,8 +127,10 @@ static const AGSGameDescription gameDescriptions[] = {
 			ADGF_NO_FLAGS,
 			GUIO1(GUIO_NOASPECT)
 		},
+		"",
+		"",
 	},
-	{ AD_TABLE_END_MARKER }
+	{ AD_TABLE_END_MARKER, "", "" }
 };
 
 static const AGSGameDescription fallbackDescs[] = {
@@ -128,6 +144,8 @@ static const AGSGameDescription fallbackDescs[] = {
 			ADGF_NO_FLAGS,
 			GUIO_NONE
 		},
+		"",
+		"",
 	}
 };
 
