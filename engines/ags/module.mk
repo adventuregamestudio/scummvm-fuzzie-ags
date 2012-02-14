@@ -6,6 +6,7 @@ MODULE_OBJS := \
 	gamefile.o \
 	gui.o \
 	resourceman.o \
+	room.o \
 	script.o \
 	sprites.o \
 	util.o

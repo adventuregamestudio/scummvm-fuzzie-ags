@@ -89,7 +89,7 @@ public:
 	}
 
 	virtual const char *getOriginalCopyright() const {
-		return "Copyright (C) Chris Jones";
+		return "Copyright (C) 1999-2011 Chris Jones";
 	}
 
 	virtual bool hasFeature(MetaEngineFeature f) const;
