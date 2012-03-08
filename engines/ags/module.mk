@@ -6,6 +6,7 @@ MODULE_OBJS := \
 	detection.o \
 	gamefile.o \
 	gamestate.o \
+	graphics.o \
 	gui.o \
 	resourceman.o \
 	room.o \
