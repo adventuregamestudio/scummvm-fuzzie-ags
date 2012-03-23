@@ -600,6 +600,7 @@ void AGSEngine::checkNewRoom() {
 	_inNewRoomState = newRoomWas;
 }
 
+// 'setevent' in original
 void AGSEngine::queueGameEvent(GameEventType type, uint data1, uint data2, uint data3) {
 	GameEvent ev;
 	ev.type = type;
@@ -610,6 +611,7 @@ void AGSEngine::queueGameEvent(GameEventType type, uint data1, uint data2, uint 
 	_queuedGameEvents.push_back(ev);
 }
 
+// 'runevent_now' in original
 void AGSEngine::runGameEventNow(GameEventType type, uint data1, uint data2, uint data3) {
 	GameEvent ev;
 	ev.type = type;
@@ -620,6 +622,7 @@ void AGSEngine::runGameEventNow(GameEventType type, uint data1, uint data2, uint
 	processGameEvent(ev);
 }
 
+// 'process_event' in original
 void AGSEngine::processGameEvent(const GameEvent &event) {
 	switch (event.type) {
 	case kEventTextScript:
@@ -726,6 +729,7 @@ void AGSEngine::processGameEvent(const GameEvent &event) {
 	}
 }
 
+// 'processallevents' in original
 void AGSEngine::processAllGameEvents() {
 	if (_insideProcessEvent)
 		return;
