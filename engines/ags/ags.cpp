@@ -113,12 +113,48 @@ AGSEngine::~AGSEngine() {
 		if (i->_value != _currentRoom)
 			delete i->_value;
 
-	delete _scriptState;
-
+	// un-export all the global objects
+	_scriptState->removeImport("character");
+	_scriptState->removeImport("player");
+	_scriptState->removeImport("gui");
+	_scriptState->removeImport("inventory");
+	_scriptState->removeImport("mouse");
+	_scriptState->removeImport("game");
+	_scriptState->removeImport("gs_globals");
+	_scriptState->removeImport("savegameindex");
+	_scriptState->removeImport("system");
+	_scriptState->removeImport("object");
+	_scriptState->removeImport("hotspot");
+	_scriptState->removeImport("region");
+	_scriptState->removeImport("dialog");
+	for (uint i = 0; i < _gameFile->_dialogs.size(); ++i)
+		_scriptState->removeImport(_gameFile->_dialogs[i]._name);
 	for (uint i = 0; i < _characters.size(); ++i) {
-		assert(_characters[i]->getRefCount() == 1);
-		_characters[i]->DecRef();
+		Character *charInfo = _characters[i];
+		if (charInfo->_scriptName.empty())
+			continue;
+		_scriptState->removeImport(charInfo->_scriptName);
 	}
+	for (uint i = 0; i < _gameFile->_guiGroups.size(); ++i) {
+		GUIGroup &group = *_gameFile->_guiGroups[i];
+		if (group._name.empty())
+			continue;
+		_scriptState->removeImport(group._name);
+		for (uint j = 0; j < group._controls.size(); ++j) {
+			if (group._controls[j]->_scriptName.empty())
+				continue;
+			_scriptState->removeImport(group._controls[j]->_scriptName);
+		}
+	}
+	for (uint i = 0; i < _gameFile->_invItemInfo.size(); ++i) {
+		InventoryItem &invItem = _gameFile->_invItemInfo[i];
+		if (invItem._scriptName.empty())
+			continue;
+		_scriptState->removeImport(invItem._scriptName);
+	}
+	_audio->deregisterScriptObjects();
+
+	delete _scriptState;
 
 	delete _scriptMouseObject;
 	delete _gameStateGlobalsObject;
@@ -134,6 +170,11 @@ AGSEngine::~AGSEngine() {
 	delete _audio;
 	delete _gameFile;
 	delete _resourceMan;
+
+	for (uint i = 0; i < _characters.size(); ++i) {
+		assert(_characters[i]->getRefCount() == 1);
+		_characters[i]->DecRef();
+	}
 
 	delete _rnd;
 }
@@ -718,14 +759,28 @@ void AGSEngine::loadNewRoom(uint32 id, Character *forChar) {
 void AGSEngine::unloadOldRoom() {
 	assert(_currentRoom);
 
-	// FIXME: discard room if we shouldn't keep it
-	_currentRoom->unload();
-	_currentRoom = NULL;
-
+	// set the global arrays back to invalid empty versions
 	_roomObjectState->_objectObject->setArray(&_roomObjectState->_invalidObjects);
 	_roomObjectState->_hotspotObject->setArray(&_roomObjectState->_invalidHotspots);
 	_roomObjectState->_regionObject->setArray(&_roomObjectState->_invalidRegions);
-	// FIXME: remove old exported objects
+
+	// remove all the exported objects
+	for (uint i = 0; i < _currentRoom->_objects.size(); ++i) {
+		RoomObject *obj = _currentRoom->_objects[i];
+		if (obj->_scriptName.empty())
+			continue;
+		_scriptState->removeImport(obj->_scriptName);
+	}
+	for (uint i = 0; i < _currentRoom->_hotspots.size(); ++i) {
+		RoomHotspot &hotspot = _currentRoom->_hotspots[i];
+		if (hotspot._scriptName.empty())
+			continue;
+		_scriptState->removeImport(hotspot._scriptName);
+	}
+
+	// FIXME: discard room if we shouldn't keep it
+	_currentRoom->unload();
+	_currentRoom = NULL;
 
 	// FIXME: a lot of unimplemented stuff
 	warning("AGSEngine::unloadOldRoom() unimplemented");
