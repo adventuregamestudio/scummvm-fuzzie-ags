@@ -25,6 +25,7 @@
  */
 
 // Base stuff
+#include "common/debug-channels.h"
 #include "common/error.h"
 #include "common/random.h"
 #include "common/stack.h"
@@ -72,7 +73,7 @@ struct RoomObjectState {
 };
 
 AGSEngine::AGSEngine(OSystem *syst, const AGSGameDescription *gameDesc) :
-	Engine(syst), _gameDescription(gameDesc), _engineStartTime(0), _playTime(0),
+	Engine(syst), _gameDescription(gameDesc), _engineStartTime(0), _playTime(0), _pauseGameCounter(0),
 	_resourceMan(0), _needsUpdate(true), _guiNeedsUpdate(true), _backgroundNeedsUpdate(false),
 	_poppedInterface((uint)-1),
 	_startingRoom(0xffffffff), _displayedRoom(0xffffffff),
@@ -84,6 +85,8 @@ AGSEngine::AGSEngine(OSystem *syst, const AGSGameDescription *gameDesc) :
 	_leavesScreenRoomId(-1),
 	_newRoomPos(0), _newRoomX(SCR_NO_VALUE), _newRoomY(SCR_NO_VALUE),
 	_blockingUntil(kUntilNothing), _insideProcessEvent(false) {
+
+	DebugMan.addDebugChannel(kDebugLevelGame, "Game", "AGS runtime debugging");
 
 	_rnd = new Common::RandomSource("ags");
 	_scriptState = new GlobalScriptState();
@@ -177,6 +180,19 @@ AGSEngine::~AGSEngine() {
 	}
 
 	delete _rnd;
+}
+
+void AGSEngine::pauseGame() {
+	_pauseGameCounter++;
+	debugC(kDebugLevelGame, "game paused, pause level now %d", _pauseGameCounter);
+}
+
+void AGSEngine::unpauseGame() {
+	if (_pauseGameCounter == 0)
+		warning("unpauseGame: game isn't paused");
+	else
+		_pauseGameCounter--;
+	debugC(kDebugLevelGame, "game unpaused, pause level now %d", _pauseGameCounter);
 }
 
 Common::Error AGSEngine::run() {
@@ -282,13 +298,12 @@ void AGSEngine::tickGame(bool checkControls) {
 		return;
 	// FIXME: check if inventory action changed room
 
-	/* if (!paused) */
+	if (!isPaused())
 		updateStuff();
 
 	// FIXME: a whole bunch of update stuff
 
 	if (!_state->_fastForward) {
-		// TODO: workaround for Gemini Rue (which doesn't call Release)
 		if (_backgroundNeedsUpdate) {
 			_currentRoom->updateWalkBehinds();
 			_backgroundNeedsUpdate = false;
@@ -413,7 +428,7 @@ void AGSEngine::updateEvents(bool checkControls) {
 			_graphics->setMouseCursor(CURS_ARROW);
 			group->setVisible(true);
 			_poppedInterface = i;
-			// FIXME: pauseGame();
+			pauseGame();
 			break;
 		}
 	}
@@ -453,9 +468,11 @@ void AGSEngine::updateEvents(bool checkControls) {
 	if (_inNewRoomState != kNewRoomStateNone || _newRoomStateWas != kNewRoomStateNone)
 		return;
 	// * if the game is paused
-	// FIXME
+	if (isPaused())
+		return;
 	// * if the GUI is disabled (in wait mode)
-	// FIXME
+	if (_state->_disabledUserInterface)
+		return;
 
 	// work out which edge the player is beyond, if any
 	bool edgesActivated[4] = { false, false, false, false };
@@ -1640,7 +1657,7 @@ void AGSEngine::removePopupInterface(uint guiId) {
 		return;
 
 	_poppedInterface = (uint)-1;
-	// FIXME: unpauseGame();
+	unpauseGame();
 
 	GUIGroup *group = _gameFile->_guiGroups[guiId];
 	group->setVisible(false);
