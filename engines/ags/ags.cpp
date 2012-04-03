@@ -1054,6 +1054,13 @@ void AGSEngine::setAsPlayerChar(uint charId) {
 	}
 }
 
+// for CallRoomScript
+void AGSEngine::queueCustomRoomScript(uint32 param) {
+	assert(!_runningScripts.empty());
+
+	queueOrRunTextScript(_roomScript, "on_call", param);
+}
+
 // 'setevent' in original
 void AGSEngine::queueGameEvent(GameEventType type, uint data1, uint data2, uint data3) {
 	GameEvent ev;
@@ -2026,6 +2033,9 @@ void AGSEngine::runTextScript(ccInstance *instance, const Common::String &name, 
 		if (instance == _roomScript)
 			error("failed to run room script '%s' (room %d)", name.c_str(), _displayedRoom);
 	}
+
+	if (params.size() == 1 && instance == _roomScript)
+		_state->_roomScriptFinished = 1;
 }
 
 ScriptImport AGSEngine::resolveImport(const Common::String &name, bool mustSucceed) {
