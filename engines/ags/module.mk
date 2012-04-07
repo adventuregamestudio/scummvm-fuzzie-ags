@@ -10,6 +10,7 @@ MODULE_OBJS := \
 	gamestate.o \
 	graphics.o \
 	gui.o \
+	overlay.o \
 	resourceman.o \
 	room.o \
 	script.o \
