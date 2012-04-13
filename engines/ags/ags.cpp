@@ -321,18 +321,26 @@ void AGSEngine::tickGame(bool checkControls) {
 	_mouseOnGUI = (uint)-1;
 	// FIXME: checkDebugKeys();
 
-	// FIXME: check if _inNewRoomState is 0
-	updateEvents(checkControls);
-	if (shouldQuit())
-		return;
-	// FIXME: check if inventory action changed room
+	if (_inNewRoomState == kNewRoomStateNone) {
+		// don't let the player do anything before the screen fades in
+		// (don't let edge updates run either)
+		uint oldRoom = _displayedRoom;
+		updateEvents(checkControls);
+		if (shouldQuit())
+			return;
+		// an interaction might have sent us to another room
+		if (oldRoom != _displayedRoom)
+			checkNewRoom();
+	}
 
 	if (!isGamePaused())
 		updateStuff();
 
+	// FIXME: update animating buttons
 	// FIXME: a whole bunch of update stuff
 
 	if (!_state->_fastForward) {
+		// We do the graphics update now.
 		if (_backgroundNeedsUpdate) {
 			_currentRoom->updateWalkBehinds();
 			_backgroundNeedsUpdate = false;
@@ -346,7 +354,7 @@ void AGSEngine::tickGame(bool checkControls) {
 		updateViewport(); // FIXME: only in the absence of a complete overlay?
 		_graphics->draw();
 
-		// FIXME: hotspot stuff
+		// FIXME: hotspot stuff (mouse over hotspot)
 	}
 
 	_newRoomStateWas = _inNewRoomState;
@@ -1009,6 +1017,8 @@ void AGSEngine::loadNewRoom(uint32 id, Character *forChar) {
 
 	_newRoomX = SCR_NO_VALUE;
 
+	_state->_enteredEdge = (uint)-1;
+
 	// if a destination edge was provided, try positioning character there
 	if (_newRoomPos > 0 && forChar) {
 		// FIXME: room entry stuff
@@ -1018,7 +1028,6 @@ void AGSEngine::loadNewRoom(uint32 id, Character *forChar) {
 	}
 
 	// update state according to character position when entering
-	_state->_enteredEdge = (uint)-1;
 	if (forChar) {
 		_state->_enteredAtX = forChar->_x;
 		_state->_enteredAtY = forChar->_y;
@@ -1093,6 +1102,9 @@ void AGSEngine::unloadOldRoom() {
 	_roomScriptFork = NULL;
 	delete _roomScript;
 	_roomScript = NULL;
+
+	// cancel any running scripts which snuck in during newRoom
+	_runningScripts.clear();
 	// cancel any pending room events
 	_queuedGameEvents.clear();
 
@@ -1566,6 +1578,7 @@ bool AGSEngine::runInteractionScript(InteractionScript *scripts, uint eventId, u
 
 		if (!checkOnly)
 			runUnhandledEvent(eventId);
+
 		return false;
 	}
 
@@ -1694,7 +1707,7 @@ bool AGSEngine::runInteractionCommandList(NewInteractionEvent &event, uint &comm
 				queueOrRunTextScript(_gameScript, name);
 			} else {
 				// room script
-				// FIXME: bounds check?
+				// TODO: bounds check?
 				Common::String name = makeTextScriptName(_eventBlockBaseName, _eventBlockId, commands[i]._args[0]._val);
 				queueOrRunTextScript(_roomScript, name);
 			}
@@ -2146,14 +2159,14 @@ bool AGSEngine::runObjectInteraction(uint objectId, uint mode, bool checkOnly) {
 			ret |= runInteractionEvent(object->_interaction, param,
 				kGeneralEventClick, param == 3, checkOnly);
 		if (!ret)
-			ret |= runInteractionEvent(object->_interaction, kGeneralEventClick, (uint)-1, checkOnly);
+			ret |= runInteractionEvent(object->_interaction, kGeneralEventClick, (uint)-1, false, checkOnly);
 	} else {
 		// 3.x
 		if (param != (uint)-1)
 			ret |= runInteractionScript(&object->_interactionScripts, param,
 				kGeneralEventClick, param == 3, checkOnly);
 		if (!ret)
-			ret |= runInteractionScript(&object->_interactionScripts, kGeneralEventClick, (uint)-1, checkOnly);
+			ret |= runInteractionScript(&object->_interactionScripts, kGeneralEventClick, (uint)-1, false, checkOnly);
 	}
 
 	_eventBlockBaseName = oldBaseName;
@@ -2238,7 +2251,8 @@ bool AGSEngine::init() {
 		_gameFile->_guiInvControls[i]->resized();
 	}
 
-	// FIXME: the rest of init_game_settings (player inv etc)
+	// FIXME: the rest of init_game_settings
+
 	for (uint i = 0; i < _characters.size(); ++i) {
 		if (_characters[i]->_view >= 0) {
 			// set initial loop to 0..
@@ -2583,7 +2597,7 @@ void AGSEngine::removePopupInterface(uint guiId) {
 	GUIGroup *group = _gameFile->_guiGroups[guiId];
 	group->setVisible(false);
 
-	// FIXME: filter?
+	// TODO: filter?
 
 	if (_state->_disabledUserInterface) {
 		// Only change the mouse cursor if it hasn't been specifically changed first
@@ -2857,6 +2871,7 @@ void AGSEngine::runTextScript(ccInstance *instance, const Common::String &name, 
 			return;
 		break;
 	case 2:
+		// FIXME: original updates GUIs on 'interface_click'
 		if (name != "on_event")
 			break;
 		if (runClaimableEvent(name, params))
