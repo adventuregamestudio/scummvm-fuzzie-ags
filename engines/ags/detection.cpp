@@ -115,7 +115,7 @@ static AGS::AGSGameDescription s_fallbackDesc = {
 	"",
 	""
 };
-static char s_fallbackFilenameBuffer[21];
+static char s_fallbackFilenameBuffer[51];
 static char s_fallbackTitleBuffer[51];
 
 const ADGameDescription *AGSMetaEngine::fallbackDetect(const FileMap &allFiles, const Common::FSList &fslist) const {
@@ -170,8 +170,8 @@ const ADGameDescription *AGSMetaEngine::fallbackDetect(const FileMap &allFiles, 
 		s_fallbackTitleBuffer[50] = '\0';
 		desc->title = s_fallbackTitleBuffer;
 
-		strncpy(s_fallbackFilenameBuffer, filename.c_str(), 20);
-		s_fallbackFilenameBuffer[20] = '\0';
+		strncpy(s_fallbackFilenameBuffer, filename.c_str(), 50);
+		s_fallbackFilenameBuffer[50] = '\0';
 		desc->filename = s_fallbackFilenameBuffer;
 
 		return (ADGameDescription *)desc;
