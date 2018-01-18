@@ -139,6 +139,8 @@ const ADGameDescription *AGSMetaEngine::fallbackDetect(const FileMap &allFiles, 
 			continue;
 
 		Common::String filename = file->getName();
+		debug(4, "Checking file %s", filename.c_str());
+
 		filename.toLowercase();
 		if (!filename.hasSuffix(".exe"))
 			continue;
