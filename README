@@ -1,3 +1,19 @@
+PRELIMINARY NOTE ON scummvm-fuzzie-ags REPOSITORY
+------------------------------------------------------------------------
+
+This repository contains an original work on porting AGS engine to
+ScummVM done by Alyssa Milburn (@fuzzie). This port was practically
+a full engine rewrite with all the new code. Unfortunately, it was never
+100% complete, and not synced with the latest versions of AGS.
+
+Around 2021 ScummVM team had released a new complete AGS port based on the
+AGS own code, and since then this old port may be considered obsolete.
+
+Still, it's a good work, contains well written code, and may also be
+seen as a possible variant of AGS refactor. For that reason we keep it
+here, archived, as a historical reference.
+
+
 ScummVM README
 ------------------------------------------------------------------------
 
